@@ -1,52 +1,61 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useLogApi } from "./hooks/useLogApi";
-import { API_BASE_URL, APP_URL } from "./config";
+import { usePayrollLog } from "./hooks/usePayrollLog";
+import {
+  API_BASE_URL,
+  GOOGLE_AUTH_PATH,
+  API_ME,
+  WINDOW_WIDTH,
+  WINDOW_HEIGHT,
+} from "./config";
 import "./App.css";
 
 const getToken = () => localStorage.getItem("jwt");
 
-if (window.location.pathname === "/login-success") {
-  const params = new URLSearchParams(window.location.search);
-  const token  = params.get("token");
-
-  if (token && window.opener) {
-    window.opener.postMessage(
-      { type: "LOGIN_SUCCESS", token },
-      APP_URL
-    );
-    window.close();
-  }
-}
-
 function App() {
-  const [log, setLog]           = useState("");
-  const [user, setUser]         = useState(null);
-  const [checking, setChecking] = useState(true);
-  const popupRef                = useRef(null);
+  const [log, setLog]                     = useState("");
+  const [user, setUser]                   = useState(null);
+  const [checking, setChecking]           = useState(true);
+  const [expandedRow, setExpandedRow]     = useState(null);
+  const [result, setResult]               = useState("");
+  const [wsStatus, setWsStatus]           = useState(null);
+  const [showAiResult, setShowAiResult]   = useState(false);
+  const popupRef                          = useRef(null);
 
-  const { result, loading, status, correlationId, sendLog } = useLogApi(getToken);
+  const handleLogResult = useCallback((correlationId, status, aiResult) => {
+    setWsStatus(status);
+    if (status === "COMPLETED") {
+      setResult(aiResult ?? "");
+      setShowAiResult(true);
+    }
+    if (status === "FAILED") {
+      setResult("ERROR: " + (aiResult ?? "unknown"));
+      setShowAiResult(true);
+    }
+  }, []);
+
+  const { loading, correlationId, status, sendLog } = useLogApi(getToken);
+  const { payrollEvents, clearEvents, stompRef }    = usePayrollLog(user, handleLogResult);
+
+  const displayStatus = wsStatus ?? status;
+
+  const handleSendLog = (logText) => {
+    setResult("");
+    setWsStatus(null);
+    setShowAiResult(false);
+    sendLog(logText);
+  };
 
   useEffect(() => {
     const token = getToken();
+    if (!token) { setChecking(false); return; }
 
-    if (!token) {
-      setChecking(false);
-      return;
-    }
-
-    fetch(`${API_BASE_URL}/api/v1/me`, {
-      headers: { Authorization: "Bearer " + token }
+    fetch(`${API_BASE_URL}${API_ME}`, {
+      headers: { Authorization: "Bearer " + token },
     })
-      .then(res => {
-        if (!res.ok) throw new Error("Unauthorized");
-        return res.json();
-      })
-      .then(data => {
-        if (data?.authenticated === true || data?.email) {
-          setUser({ email: data.email, name: data.name });
-        } else {
-          setUser(null);
-        }
+      .then((res) => { if (!res.ok) throw new Error(); return res.json(); })
+      .then((data) => {
+        setUser(data?.email ? { email: data.email, name: data.name } : null);
         setChecking(false);
       })
       .catch(() => {
@@ -57,60 +66,56 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const handleMessage = (event) => {
-      if (event.origin !== APP_URL) return;
-      if (event.data?.type !== "LOGIN_SUCCESS") return;
-
-      const token = event.data.token;
-      localStorage.setItem("jwt", token);
-
-      if (popupRef.current && !popupRef.current.closed) {
-        popupRef.current.close();
+    const interval = setInterval(() => {
+      const token = localStorage.getItem("jwt");
+      if (token && !user) {
+        fetch(`${API_BASE_URL}${API_ME}`, {
+          headers: { Authorization: "Bearer " + token },
+        })
+          .then((res) => { if (!res.ok) throw new Error(); return res.json(); })
+          .then((data) => {
+            setUser({ email: data.email, name: data.name });
+            setChecking(false);
+          })
+          .catch(() => {});
       }
-
-      fetch(`${API_BASE_URL}/api/v1/me`, {
-        headers: { Authorization: "Bearer " + token }
-      })
-        .then(res => res.json())
-        .then(data => setUser({ email: data.email, name: data.name }))
-        .catch(() => setUser(null));
-    };
-
-    window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
-  }, []);
-
-  if (window.location.pathname === "/login-success") {
-    return (
-      <div className="app">
-        <div className="loading-screen">
-          <div className="loading-logo">📋</div>
-          <div className="loading-spinner" />
-          <p className="loading-text">Logger inn...</p>
-        </div>
-      </div>
-    );
-  }
+    }, 500);
+    return () => clearInterval(interval);
+  }, [user]);
 
   const login = () => {
-    const width  = 500;
-    const height = 620;
-    const left   = window.screenX + (window.outerWidth  - width)  / 2;
-    const top    = window.screenY + (window.outerHeight - height) / 2;
-
-    const authUrl = new URL(`${API_BASE_URL}/oauth2/authorization/google`);
+    const left    = window.screenX + (window.outerWidth  - WINDOW_WIDTH)  / 2;
+    const top     = window.screenY + (window.outerHeight - WINDOW_HEIGHT) / 2;
+    const authUrl = new URL(`${API_BASE_URL}${GOOGLE_AUTH_PATH}`);
     authUrl.searchParams.set("prompt", "select_account");
-
     popupRef.current = window.open(
       authUrl.toString(),
       "google-login",
-      `width=${width},height=${height},left=${left},top=${top},resizable=no,scrollbars=yes`
+      `width=${WINDOW_WIDTH},height=${WINDOW_HEIGHT},left=${left},top=${top},resizable=no,scrollbars=yes`
     );
   };
 
   const logout = () => {
     localStorage.removeItem("jwt");
+    localStorage.removeItem("jwt_ready");
+    stompRef.current?.deactivate();
     setUser(null);
+    clearEvents();
+    setResult("");
+    setWsStatus(null);
+    setShowAiResult(false);
+  };
+
+  const formatDate = (iso) => {
+    if (!iso) return "—";
+    const d   = new Date(iso);
+    const day = d.getDate();
+    const mon = d.getMonth() + 1;
+    const yr  = String(d.getFullYear()).slice(-2);
+    const hh  = String(d.getHours()).padStart(2, "0");
+    const mm  = String(d.getMinutes()).padStart(2, "0");
+    const ss  = String(d.getSeconds()).padStart(2, "0");
+    return `${day}.${mon}.${yr} ${hh}:${mm}:${ss}`;
   };
 
   /* =========================
@@ -196,35 +201,121 @@ function App() {
             />
             <button
               className="analyze-btn"
-              onClick={() => sendLog(log)}
-              disabled={loading}
+              onClick={() => handleSendLog(log)}
+              disabled={loading || displayStatus === "PENDING"}
             >
-              {loading ? "Analyzing..." : "Analyser logg"}
+              {loading || displayStatus === "PENDING" ? "Analyserer..." : "Analyser logg"}
             </button>
           </div>
         </div>
 
         <div className="card">
-          <div className="card-header">🤖 AI-analyse — llama3.2</div>
+          <div
+            className={`card-header ${result ? "card-header-clickable" : ""}`}
+            onClick={() => result && setShowAiResult((v) => !v)}
+          >
+            <span>🤖 AI-analyse — llama3.2</span>
+            {result && (
+              <span className="expand-hint">{showAiResult ? "▲" : "▼"}</span>
+            )}
+          </div>
 
-          {loading && <div className="progress-bar"><div className="progress-fill" /></div>}
+          {(loading || displayStatus === "PENDING") && (
+            <div className="progress-bar"><div className="progress-fill" /></div>
+          )}
 
-          {status && !loading && (
+          {displayStatus && (
             <div className="status-row">
-              <span className={`status-pill ${status}`}>{status}</span>
+              <span className={`status-pill ${displayStatus}`}>{displayStatus}</span>
               {correlationId && <span className="corr-id">{correlationId}</span>}
             </div>
           )}
 
-          {!result && !loading && !status && (
+          {!result && !loading && !displayStatus && (
             <div className="result-empty">
               Ingen analyse ennå. Send en logg for å starte.
             </div>
           )}
 
-          {result && !loading && (
-            <div className={`result-content ${result.startsWith("ERROR") ? "error" : ""}`}>
-              {result}
+          {result && showAiResult && (
+            <div className={`ai-result-box ${result.startsWith("ERROR") ? "error" : ""}`}>
+              <p className="ai-result-text">{result}</p>
+            </div>
+          )}
+        </div>
+
+        <div className="card card-full">
+          <div className="card-header">
+            📊 Log Events
+            <span className="card-header-count">{payrollEvents.length}</span>
+          </div>
+
+          {payrollEvents.length === 0 ? (
+            <div className="result-empty">Ingen events ennå...</div>
+          ) : (
+            <div className="table-wrap">
+              <table className="log-table">
+                <thead>
+                  <tr>
+                    <th>Kilde</th>
+                    <th>Korrelasjons-ID</th>
+                    <th>Melding</th>
+                    <th>Status</th>
+                    <th>Opprettet</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {payrollEvents.map((event, i) => (
+                    <>
+                      <tr
+                        key={`row-${i}`}
+                        className={expandedRow === i ? "row-active" : ""}
+                        onClick={() => setExpandedRow(expandedRow === i ? null : i)}
+                        style={{ cursor: event.result ? "pointer" : "default" }}
+                      >
+                        <td>
+                          <span className={`source-badge ${event.source}`}>
+                            {event.source ?? "—"}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="corr-badge" title={event.correlationId ?? ""}>
+                            {event.correlationId ? event.correlationId.slice(0, 8) + "…" : "—"}
+                          </span>
+                        </td>
+                        <td className="td-message">
+                          {event.message ?? "—"}
+                          {event.result && (
+                            <span className="expand-hint">
+                              {expandedRow === i ? " ▲" : " ▼"}
+                            </span>
+                          )}
+                        </td>
+                        <td>
+                          <span className={`row-status ${event.status}`}>
+                            <span className="row-status-dot" />
+                            {event.status ?? "—"}
+                          </span>
+                        </td>
+                        <td className="td-time">
+                          {formatDate(event.createdAt ?? event.receivedAt)}
+                        </td>
+                      </tr>
+
+                      {expandedRow === i && event.result && (
+                        <tr key={`result-${i}`} className="row-result">
+                          <td colSpan={5}>
+                            <div className="ai-result-box">
+                              <span className="ai-result-label">🤖 AI-analyse</span>
+                              <p className="ai-result-text">{event.result}</p>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>

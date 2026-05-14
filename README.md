@@ -1,19 +1,27 @@
 # logsense-ai-frontend
 
-LogSenseAI React-frontend for et AI-drevet logganalysedashboard med OAuth2-autentisering og sanntids statusoppdatering via polling. Kommuniserer med en Java Spring Boot/Kafka-backend for å sende loggdata, spore behandling via correlationId og hente AI-genererte analyser asynkront.
+LogSenseAI React-frontend for et AI-drevet logganalysedashboard med OAuth2-autentisering og sanntids oppdatering via WebSocket. Kommuniserer med en Java Spring Boot/Kafka-backend for å sende loggdata, spore behandling via correlationId og motta AI-genererte analyser i sanntid.
 
 ## Oversikt
 
-React-applikasjon som lar brukere sende loggmeldinger til 🔗 [Backend (๋Java Spring Boot + Kafka)](https://github.com/wasana007/logsense-ai-backend) og motta AI-genererte analyser asynkront. Autentisering håndteres via OAuth2, og resultater hentes automatisk via polling inntil analysen er fullført.
+React-applikasjon som lar brukere sende loggmeldinger til 🔗 [Backend (Java Spring Boot + Kafka)](https://github.com/wasana007/logsense-ai-backend) og motta AI-genererte analyser asynkront. Autentisering håndteres via OAuth2 Google-popup, og resultater mottas automatisk via WebSocket når analysen er fullført.
+
+
+## 🎥 Demo
+
+### 🎬 Dashboard for loggovervåking - Klikk på bildet nedenfor for å se hele demoen på YouTube ▶️
+[![Watch Demo](https://raw.githubusercontent.com/wasana007/logsense-ai-backend/master/docs/images/logsenseai.jpg)](https://www.youtube.com/watch?v=MTGsfn9Y7eY&list=PLOwWtF7kBLb8EYRrO9Z94Oalhewrdnwmj)
 
 ## Funksjoner
 
-- OAuth2-innlogging
+- OAuth2-innlogging via Google-popup
 - Send loggmeldinger til backend via POST
 - Sanntids statusvisning: `PENDING` → `COMPLETED` / `FAILED`
-- Polling mot `GET /api/v1/logs/{correlationId}`
+- Resultater mottas via WebSocket — ingen polling
 - Animert progress bar under behandling
 - Viser `correlationId` for sporing
+- Live Log Events-tabell med sanntidsoppdatering via WebSocket
+- Støtter kilder: `PAYROLL_SERVICE` og `LOGSENSE_AI`
 
 ## Teknologi
 
@@ -21,11 +29,13 @@ React-applikasjon som lar brukere sende loggmeldinger til 🔗 [Backend (๋Java
 |---|---|
 | React | 18+ |
 | Create React App | 5+ |
-| @react-oauth/google | siste |
+| @stomp/stompjs | siste |
+| sockjs-client | siste |
+| react-router-dom | siste |
 
 ## Kom i gang
 
-**Forutsetninger:** Node.js 18+ og 🔗 [Backend (๋Java Spring Boot + Kafka)](https://github.com/wasana007/logsense-ai-backend) kjørende på `http://localhost:8080`
+**Forutsetninger:** Node.js 18+ og 🔗 [Backend (Java Spring Boot + Kafka)](https://github.com/wasana007/logsense-ai-backend) kjørende på `http://localhost:8080`
 
 ```bash
 npm install
@@ -36,22 +46,28 @@ npm start
 
 ## Konfigurasjon
 
-Konfigureres direkte i `src/App.js`:
+Konfigureres i `src/config.js`:
 
-| Variabel | Standard | Beskrivelse |
+| Konstant | Standard | Beskrivelse |
 |---|---|---|
-| API URL | `http://localhost:8080` | logsense-ai-backend |
-| `POLL_INTERVAL_MS` | `1500` | Polling-intervall i ms |
-| `POLL_MAX_ATTEMPTS` | `20` | Maks forsøk (~30 sek) |
-| `redirect_uri` | `http://localhost:3000` | OAuth2 redirect |
+| `API_BASE_URL` | `http://localhost:8080` | logsense-ai-backend |
+| `WS_RECONNECT_DELAY` | `5000` | WebSocket reconnect-intervall i ms |
+| `MAX_LOG_ENTRIES` | `50` | Maks antall rader i logtabellen |
+| `WINDOW_WIDTH` | `500` | Bredde på Google login-popup |
+| `WINDOW_HEIGHT` | `620` | Høyde på Google login-popup |
+| `REDIRECT_DELAY_MS` | `500` | Forsinkelse før redirect etter login |
 
 ## Relasjon til backend
 
 ```
 logsense-ai-frontend (port 3000)
       │
-      │  POST /api/v1/logs        → send logg
-      │  GET  /api/v1/logs/{id}   → poll resultat
+      │  POST /api/v1/logs          → send logg
+      │  GET  /api/v1/me            → hent brukerinfo
+      │
+      │  WS   /ws                   → WebSocket-tilkobling
+      │  SUB  /topic/payroll-logs   → live payroll-events
+      │  SUB  /topic/logs           → AI-analyseresultater
       ▼
 logsense-ai-backend (port 8080)
 ```

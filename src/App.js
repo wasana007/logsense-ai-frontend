@@ -1,12 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useLogApi } from "./hooks/useLogApi";
 import { usePayrollLog } from "./hooks/usePayrollLog";
 import {
   API_BASE_URL,
   GOOGLE_AUTH_PATH,
   API_ME,
-  WINDOW_WIDTH,
-  WINDOW_HEIGHT,
+  JWT_KEY,
 } from "./config";
 import "./App.css";
 
@@ -20,8 +19,6 @@ function App() {
   const [result, setResult]               = useState("");
   const [wsStatus, setWsStatus]           = useState(null);
   const [showAiResult, setShowAiResult]   = useState(false);
-  const popupRef                          = useRef(null);
-
   const handleLogResult = useCallback((correlationId, status, aiResult) => {
     setWsStatus(status);
     if (status === "COMPLETED") {
@@ -83,16 +80,34 @@ function App() {
     return () => clearInterval(interval);
   }, [user]);
 
+  useEffect(() => {
+    function handleMessage(event) {
+      if (event.origin !== API_BASE_URL) return;
+      if (event.data?.type !== "LOGIN_SUCCESS") return;
+
+      const token = event.data.token;
+      localStorage.setItem(JWT_KEY, token);
+      window.location.replace("/");
+
+      fetch(`${API_BASE_URL}${API_ME}`, {
+        headers: { Authorization: "Bearer " + token },
+      })
+        .then((res) => { if (!res.ok) throw new Error(); return res.json(); })
+        .then((data) => {
+          setUser({ email: data.email, name: data.name });
+          setChecking(false);
+        })
+        .catch(() => {
+          localStorage.removeItem(JWT_KEY);
+          setUser(null);
+        });
+    }
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, []);
+
   const login = () => {
-    const left    = window.screenX + (window.outerWidth  - WINDOW_WIDTH)  / 2;
-    const top     = window.screenY + (window.outerHeight - WINDOW_HEIGHT) / 2;
-    const authUrl = new URL(`${API_BASE_URL}${GOOGLE_AUTH_PATH}`);
-    authUrl.searchParams.set("prompt", "select_account");
-    popupRef.current = window.open(
-      authUrl.toString(),
-      "google-login",
-      `width=${WINDOW_WIDTH},height=${WINDOW_HEIGHT},left=${left},top=${top},resizable=no,scrollbars=yes`
-    );
+    window.location.href = `${API_BASE_URL}${GOOGLE_AUTH_PATH}?prompt=select_account`;
   };
 
   const logout = () => {

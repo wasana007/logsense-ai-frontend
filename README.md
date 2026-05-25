@@ -1,4 +1,3 @@
-```markdown
 # logsense-ai-frontend
 
 LogSenseAI React-frontend for et AI-drevet logganalysedashboard med OAuth2-autentisering, sanntids oppdatering via WebSocket og Elasticsearch-basert loggsøk. Kommuniserer med en Java Spring Boot/Kafka-backend for å sende loggdata, spore behandling via correlationId og motta AI-genererte analyser i sanntid.

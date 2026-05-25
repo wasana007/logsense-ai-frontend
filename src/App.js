@@ -6,6 +6,8 @@ import {
   GOOGLE_AUTH_PATH,
   API_ME,
   JWT_KEY,
+  API_LOGS_SEARCH,
+  API_LOGS_SEARCH_STATUS,
 } from "./config";
 import "./App.css";
 
@@ -19,6 +21,11 @@ function App() {
   const [result, setResult]               = useState("");
   const [wsStatus, setWsStatus]           = useState(null);
   const [showAiResult, setShowAiResult]   = useState(false);
+  const [searchQuery, setSearchQuery]     = useState("");
+  const [searchStatus, setSearchStatus]   = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching]         = useState(false);
+
   const handleLogResult = useCallback((correlationId, status, aiResult) => {
     setWsStatus(status);
     if (status === "COMPLETED") {
@@ -41,6 +48,22 @@ function App() {
     setWsStatus(null);
     setShowAiResult(false);
     sendLog(logText);
+  };
+
+  const handleSearch = async () => {
+    setSearching(true);
+    try {
+      const token = getToken();
+      const url = searchStatus && !searchQuery
+        ? `${API_BASE_URL}${API_LOGS_SEARCH_STATUS}/${searchStatus}`
+        : `${API_BASE_URL}${API_LOGS_SEARCH}?q=${encodeURIComponent(searchQuery)}`;
+      const res = await fetch(url, { headers: { Authorization: "Bearer " + token } });
+      setSearchResults(await res.json());
+    } catch (e) {
+      setSearchResults([]);
+    } finally {
+      setSearching(false);
+    }
   };
 
   useEffect(() => {
@@ -335,13 +358,81 @@ function App() {
           )}
         </div>
 
+        <div className="card card-full">
+          <div className="card-header">🔍 Søk i logger (Elasticsearch)</div>
+          <div className="search-bar">
+            <input
+              type="text"
+              className="search-input"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              placeholder="Søk etter keyword..."
+            />
+            <select
+              className="search-select"
+              value={searchStatus}
+              onChange={(e) => setSearchStatus(e.target.value)}
+            >
+              <option value="">Alle statuser</option>
+              <option value="COMPLETED">COMPLETED</option>
+              <option value="FAILED">FAILED</option>
+              <option value="PENDING">PENDING</option>
+            </select>
+            <button
+              className="search-btn"
+              onClick={handleSearch}
+              disabled={searching || (!searchQuery && !searchStatus)}
+            >
+              {searching ? "Søker..." : "Søk"}
+            </button>
+          </div>
+
+          {searchResults.length === 0 && !searching && (
+            <div className="result-empty">Ingen resultater.</div>
+          )}
+
+          {searchResults.length > 0 && (
+            <div className="table-wrap">
+              <table className="log-table">
+                <thead>
+                  <tr>
+                    <th>Kilde</th>
+                    <th>Korrelasjons-ID</th>
+                    <th>Melding</th>
+                    <th>Status</th>
+                    <th>Opprettet</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {searchResults.map((r, i) => (
+                    <tr key={i}>
+                      <td><span className={`source-badge ${r.source ?? ""}`}>{r.source ?? "—"}</span></td>
+                      <td><span className="corr-badge">{r.correlationId ? r.correlationId.slice(0, 8) + "…" : "—"}</span></td>
+                      <td className="td-message">{r.message ?? "—"}</td>
+                      <td>
+                        <span className={`row-status ${r.status}`}>
+                          <span className="row-status-dot" />
+                          {r.status ?? "—"}
+                        </span>
+                      </td>
+                      <td className="td-time">{formatDate(r.createdAt)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
       </div>
 
       <div className="footer">
         <span>v1.0.0</span><span>·</span>
         <span>localhost:8080</span><span>·</span>
         <span>llama3.2</span><span>·</span>
-        <span>kafka:9092</span>
+        <span>kafka:9092</span><span>·</span>
+        <span>elasticsearch:9200</span>
       </div>
     </div>
   );

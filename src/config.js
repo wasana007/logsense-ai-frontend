@@ -25,3 +25,7 @@ export const MAX_LOG_ENTRIES    = 50;
 // ── UI ──
 export const WINDOW_WIDTH       = 500;
 export const WINDOW_HEIGHT      = 620;
+
+// ── Search ──
+export const API_LOGS_SEARCH        = "/api/v1/logs/search";
+export const API_LOGS_SEARCH_STATUS = "/api/v1/logs/search/status";

@@ -1,11 +1,11 @@
+```markdown
 # logsense-ai-frontend
 
-LogSenseAI React-frontend for et AI-drevet logganalysedashboard med OAuth2-autentisering og sanntids oppdatering via WebSocket. Kommuniserer med en Java Spring Boot/Kafka-backend for å sende loggdata, spore behandling via correlationId og motta AI-genererte analyser i sanntid.
+LogSenseAI React-frontend for et AI-drevet logganalysedashboard med OAuth2-autentisering, sanntids oppdatering via WebSocket og Elasticsearch-basert loggsøk. Kommuniserer med en Java Spring Boot/Kafka-backend for å sende loggdata, spore behandling via correlationId og motta AI-genererte analyser i sanntid.
 
 ## Oversikt
 
-React-applikasjon som lar brukere sende loggmeldinger til 🔗 [Backend (Java Spring Boot + Kafka)](https://github.com/wasana007/logsense-ai-backend) og motta AI-genererte analyser asynkront. Autentisering håndteres via OAuth2 Google-popup, og resultater mottas automatisk via WebSocket når analysen er fullført.
-
+React-applikasjon som lar brukere sende loggmeldinger til 🔗 [Backend (Java Spring Boot + Kafka)](https://github.com/wasana007/logsense-ai-backend) og motta AI-genererte analyser asynkront. Autentisering håndteres via OAuth2 Google-popup, og resultater mottas automatisk via WebSocket når analysen er fullført. Historiske logger kan søkes opp via Elasticsearch.
 
 ## 🎥 Demo
 
@@ -22,6 +22,7 @@ React-applikasjon som lar brukere sende loggmeldinger til 🔗 [Backend (Java Sp
 - Viser `correlationId` for sporing
 - Live Log Events-tabell med sanntidsoppdatering via WebSocket
 - Støtter kilder: `PAYROLL_SERVICE` og `LOGSENSE_AI`
+- Elasticsearch-basert loggsøk med keyword og statusfilter
 
 ## Teknologi
 
@@ -56,18 +57,22 @@ Konfigureres i `src/config.js`:
 | `WINDOW_WIDTH` | `500` | Bredde på Google login-popup |
 | `WINDOW_HEIGHT` | `620` | Høyde på Google login-popup |
 | `REDIRECT_DELAY_MS` | `500` | Forsinkelse før redirect etter login |
+| `API_LOGS_SEARCH` | `/api/v1/logs/search` | Elasticsearch keyword-søk |
+| `API_LOGS_SEARCH_STATUS` | `/api/v1/logs/search/status` | Elasticsearch statusfilter |
 
 ## Relasjon til backend
 
 ```
 logsense-ai-frontend (port 3000)
       │
-      │  POST /api/v1/logs          → send logg
-      │  GET  /api/v1/me            → hent brukerinfo
+      │  POST /api/v1/logs                    → send logg
+      │  GET  /api/v1/me                      → hent brukerinfo
+      │  GET  /api/v1/logs/search?q=          → Elasticsearch keyword-søk
+      │  GET  /api/v1/logs/search/status/{s}  → Elasticsearch statusfilter
       │
-      │  WS   /ws                   → WebSocket-tilkobling
-      │  SUB  /topic/payroll-logs   → live payroll-events
-      │  SUB  /topic/logs           → AI-analyseresultater
+      │  WS   /ws                             → WebSocket-tilkobling
+      │  SUB  /topic/payroll-logs             → live payroll-events
+      │  SUB  /topic/logs                     → AI-analyseresultater
       ▼
 logsense-ai-backend (port 8080)
 ```

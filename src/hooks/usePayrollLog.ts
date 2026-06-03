@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Client } from "@stomp/stompjs";
+import { Client, IFrame, IMessage } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import {
   API_BASE_URL,
@@ -11,7 +11,30 @@ import {
   WS_RECONNECT_DELAY,
 } from "../config";
 
-function upsertEvent(prev, incoming) {
+type LogStatus = "PENDING" | "FAILED" | "COMPLETED";
+
+interface PayrollEvent {
+  correlationId: string;
+  status?: LogStatus;
+  result?: string;
+  source?: string;
+  receivedAt?: string;
+  [key: string]: unknown;
+}
+
+interface UsePayrollLogReturn {
+  payrollEvents: PayrollEvent[];
+  clearEvents: () => void;
+  stompRef: React.MutableRefObject<Client | null>;
+}
+
+type OnLogResult = (
+  correlationId: string,
+  status: LogStatus | undefined,
+  result: string | undefined
+) => void;
+
+function upsertEvent(prev: PayrollEvent[], incoming: PayrollEvent): PayrollEvent[] {
   const idx = prev.findIndex((e) => e.correlationId === incoming.correlationId);
   if (idx !== -1) {
     const updated = [...prev];
@@ -21,11 +44,14 @@ function upsertEvent(prev, incoming) {
   return [incoming, ...prev];
 }
 
-export function usePayrollLog(user, onLogResult) {
-  const [payrollEvents, setPayrollEvents] = useState([]);
-  const stompRef                          = useRef(null);
+export function usePayrollLog(
+  user: unknown,
+  onLogResult: OnLogResult
+): UsePayrollLogReturn {
+  const [payrollEvents, setPayrollEvents] = useState<PayrollEvent[]>([]);
+  const stompRef                          = useRef<Client | null>(null);
 
-  const onLogResultRef = useRef(onLogResult);
+  const onLogResultRef = useRef<OnLogResult>(onLogResult);
   useEffect(() => {
     onLogResultRef.current = onLogResult;
   }, [onLogResult]);
@@ -36,16 +62,17 @@ export function usePayrollLog(user, onLogResult) {
     const token = localStorage.getItem("jwt");
     if (!token) return;
 
+    if (stompRef.current) return;
+
     const client = new Client({
       webSocketFactory: () => new SockJS(`${API_BASE_URL}${WS_ENDPOINT}`),
       connectHeaders: { Authorization: `Bearer ${token}` },
       reconnectDelay: WS_RECONNECT_DELAY,
 
       onConnect: () => {
-
-        client.subscribe(WS_TOPIC_PAYROLL, (msg) => {
+        client.subscribe(WS_TOPIC_PAYROLL, (msg: IMessage) => {
           try {
-            const event = JSON.parse(msg.body);
+            const event = JSON.parse(msg.body) as PayrollEvent;
             setPayrollEvents((prev) => upsertEvent(prev, {
               ...event,
               source: SOURCE_PAYROLL,
@@ -54,9 +81,9 @@ export function usePayrollLog(user, onLogResult) {
           } catch {}
         });
 
-        client.subscribe(WS_TOPIC_LOGS, (msg) => {
+        client.subscribe(WS_TOPIC_LOGS, (msg: IMessage) => {
           try {
-            const event = JSON.parse(msg.body);
+            const event = JSON.parse(msg.body) as PayrollEvent;
             setPayrollEvents((prev) => upsertEvent(prev, {
               ...event,
               source: SOURCE_AI,
@@ -67,8 +94,12 @@ export function usePayrollLog(user, onLogResult) {
         });
       },
 
-      onStompError: (frame) => {
+      onStompError: (frame: IFrame) => {
         console.error("STOMP error", frame);
+      },
+
+      onWebSocketError: (err: Event) => {
+        console.error("WebSocket error:", err);
       },
     });
 
@@ -77,6 +108,7 @@ export function usePayrollLog(user, onLogResult) {
 
     return () => {
       client.deactivate();
+      stompRef.current = null;
     };
   }, [user]);
 

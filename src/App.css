@@ -77,8 +77,9 @@ body {
   max-width: 720px;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
   margin-bottom: 36px;
+  flex-wrap: nowrap;
 }
 
 .logo {
@@ -89,23 +90,75 @@ body {
   font-size: 18px; flex-shrink: 0;
 }
 
+.header-text {
+  flex: 1;
+  min-width: 0;
+}
+
 .header-text h1 {
-  font-size: 18px; font-weight: 700;
-  color: var(--text); letter-spacing: -0.2px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .header-text p {
-  font-size: 12px; color: var(--text-muted);
-  font-family: var(--mono); margin-top: 2px;
+  font-size: 11px;
+  color: var(--text-light);
+  font-family: var(--mono);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── NAV ── */
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.nav-link {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-decoration: none;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.nav-link:hover {
+  color: var(--blue);
+  background: var(--blue-light);
+  border-color: #93c5fd;
+}
+
+.nav-link.active {
+  color: var(--blue);
+  background: var(--blue-light);
+  border-color: #93c5fd;
+  font-weight: 600;
 }
 
 .badge {
-  margin-left: auto;
-  display: flex; align-items: center; gap: 6px;
-  background: var(--green-bg); color: var(--green);
-  padding: 4px 12px; border-radius: 20px;
-  font-size: 12px; font-weight: 500;
-  border: 1px solid var(--green-border);
+  flex-shrink: 0;
+  margin-left: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--green);
+  padding: 0;
+  background: none;
+  border: none;
 }
 
 .dot {
@@ -118,13 +171,18 @@ body {
 
 /* ── USER INFO ── */
 .user-info {
-  display: flex; align-items: center; gap: 10px;
-  margin-left: 12px;
+  display: flex; align-items: center; gap: 8px;
+  margin-left: 0;
+  flex-shrink: 0;
 }
 
 .user-name {
   font-size: 12px; color: var(--text-muted);
   font-family: var(--mono);
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .logout-btn {
@@ -132,6 +190,7 @@ body {
   border-radius: 6px; border: 1px solid var(--border);
   background: var(--surface); color: var(--text-muted);
   cursor: pointer; transition: all 0.15s;
+  flex-shrink: 0;
 }
 
 .logout-btn:hover {
@@ -301,7 +360,7 @@ textarea::placeholder { color: var(--text-light); }
 .status-pill.PENDING   { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-border); }
 .status-pill.COMPLETED { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
 .status-pill.FAILED    { background: var(--red-bg);   color: var(--red);   border: 1px solid var(--red-border); }
- 
+
 .corr-id { color: var(--text-light); font-size: 11px; }
 
 /* ── RESULT ── */
@@ -309,7 +368,7 @@ textarea::placeholder { color: var(--text-light); }
   padding: 36px; text-align: center;
   color: var(--text-light); font-size: 13px;
 }
- 
+
 /* ── LOG EVENTS TABLE ── */
 .table-wrap { overflow-x: hidden; }
 
@@ -345,11 +404,6 @@ textarea::placeholder { color: var(--text-light); }
 .log-table th:nth-child(3) { width: auto; }
 .log-table th:nth-child(4) { width: 110px; }
 .log-table th:nth-child(5) { width: 130px; }
-
-.log-table th,
-.log-table td {
-  padding: 5px 16px;
-}
 
 .source-badge {
   font-size: 11px; font-weight: 600;
@@ -478,9 +532,7 @@ textarea::placeholder { color: var(--text-light); }
   user-select: none;
 }
 
-.card-header-clickable:hover {
-  opacity: 0.8;
-}
+.card-header-clickable:hover { opacity: 0.8; }
 
 .expand-hint {
   font-size: 11px;
@@ -496,9 +548,7 @@ textarea::placeholder { color: var(--text-light); }
   border-radius: 0 6px 6px 0;
 }
 
-.ai-result-box.error {
-  border-left-color: #e05252;
-}
+.ai-result-box.error { border-left-color: #e05252; }
 
 .ai-result-label {
   font-size: 11px;
@@ -518,9 +568,7 @@ textarea::placeholder { color: var(--text-light); }
   white-space: pre-wrap;
 }
 
-.row-active td {
-  background: var(--color-background-secondary, #f9f9f9);
-}
+.row-active td { background: var(--color-background-secondary, #f9f9f9); }
 
 .row-result td {
   padding: 0 !important;

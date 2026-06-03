@@ -10,6 +10,7 @@ React-applikasjon som lar brukere sende loggmeldinger til 🔗 [Backend (Java Sp
 
 ### 🎬 Dashboard for loggovervåking - Klikk på bildet nedenfor for å se hele demoen på YouTube ▶️
 [![Watch Demo](https://raw.githubusercontent.com/wasana007/logsense-ai-backend/master/docs/images/logsenseai.jpg)](https://www.youtube.com/watch?v=MTGsfn9Y7eY&list=PLOwWtF7kBLb8EYRrO9Z94Oalhewrdnwmj)
+NB! Stemmen i videoen er generert med AI-basert tekst-til-tale-teknologi.
 
 ## Funksjoner
 
@@ -22,13 +23,14 @@ React-applikasjon som lar brukere sende loggmeldinger til 🔗 [Backend (Java Sp
 - Live Log Events-tabell med sanntidsoppdatering via WebSocket
 - Støtter kilder: `PAYROLL_SERVICE` og `LOGSENSE_AI`
 - Elasticsearch-basert loggsøk med keyword og statusfilter
+- Flersidig navigasjon med React Router (`/dashboard`, `/logs`)
 
 ## Teknologi
 
 | Teknologi | Versjon |
 |---|---|
 | React | 18+ |
-| Create React App | 5+ |
+| Vite | 5+ |
 | @stomp/stompjs | siste |
 | sockjs-client | siste |
 | react-router-dom | siste |
@@ -39,7 +41,7 @@ React-applikasjon som lar brukere sende loggmeldinger til 🔗 [Backend (Java Sp
 
 ```bash
 npm install
-npm start
+npm run dev
 ```
 
 Åpnes på `http://localhost:3000`
@@ -76,10 +78,30 @@ logsense-ai-frontend (port 3000)
 logsense-ai-backend (port 8080)
 ```
 
+## Prosjektstruktur
+
+```
+src/
+├── main.tsx                       # Inngangspunkt
+├── App.tsx                        # Router-oppsett, auth-logikk, global state
+├── App.css                        # Styling  
+├── LoginSuccess.tsx               # Håndterer token fra OAuth2-redirect
+├── config.ts                      # Alle konfigurasjonskonstanter
+├── hooks/
+│   ├── useLogApi.ts               # POST logg + håndterer PENDING-status
+│   └── usePayrollLog.ts           # WebSocket-tilkobling + live event-tabell
+├── utils/
+│   └── formatDate.ts              # Formaterer ISO-datostreng til norsk datoformat
+└── pages/
+    ├── LoginPage.tsx              # Google OAuth2-innlogging
+    ├── DashboardPage.tsx          # Logganalyse + live events
+    └── LogsPage.tsx               # Elasticsearch-søk
+```
+
 ## Scripts
 
 ```bash
-npm start       # Start utviklingsserver
-npm test        # Kjør tester
+npm run dev     # Start utviklingsserver
 npm run build   # Bygg for produksjon
+npm run preview # Forhåndsvis produksjonsbygg
 ```

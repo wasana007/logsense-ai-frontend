@@ -9,6 +9,7 @@ export default function LoginSuccess() {
     didRun.current = true;
 
     const token = new URLSearchParams(window.location.search).get("token");
+
     if (!token) {
       window.location.replace("/");
       return;
@@ -19,9 +20,17 @@ export default function LoginSuccess() {
   }, []);
 
   return (
-    <div style={{ textAlign: "center", marginTop: "3rem", fontFamily: "sans-serif" }}>
+    <div
+      style={{
+        textAlign: "center",
+        marginTop: "3rem",
+        fontFamily: "sans-serif",
+      }}
+    >
       <p>Logger inn...</p>
-      <p><a href="/">Klikk her for å gå tilbake</a></p>
+      <p>
+        <a href="/">Klikk her for å gå tilbake</a>
+      </p>
     </div>
   );
 }

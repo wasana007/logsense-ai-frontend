@@ -48,7 +48,7 @@ npm run dev
 
 ## Konfigurasjon
 
-Konfigureres i `src/config.js`:
+Konfigureres i `src/config.ts`:
 
 | Konstant | Standard | Beskrivelse |
 |---|---|---|

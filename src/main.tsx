@@ -1,16 +1,16 @@
-import ReactDOM from "react-dom/client";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import ReactDOM from 'react-dom/client';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
-import App from "./App";
-import LoginSuccess from "./LoginSuccess";
+import App from './App';
+import LoginSuccess from './LoginSuccess';
 
-import "./App.css";
+import './App.css';
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
+ReactDOM.createRoot(document.getElementById('root')!).render(
   <BrowserRouter>
     <Routes>
       <Route path="/login-success" element={<LoginSuccess />} />
       <Route path="/*" element={<App />} />
     </Routes>
-  </BrowserRouter>
+  </BrowserRouter>,
 );

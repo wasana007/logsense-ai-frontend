@@ -9,6 +9,7 @@ React-applikasjon som lar brukere sende loggmeldinger til 🔗 [Backend (Java Sp
 ## 🎥 Demo
 
 ### 🎬 Dashboard for loggovervåking - Klikk på bildet nedenfor for å se hele demoen på YouTube ▶️
+
 [![Watch Demo](https://raw.githubusercontent.com/wasana007/logsense-ai-backend/master/docs/images/logsenseai.jpg)](https://www.youtube.com/watch?v=MTGsfn9Y7eY&list=PLOwWtF7kBLb8EYRrO9Z94Oalhewrdnwmj)
 NB! Stemmen i videoen er generert med AI-basert tekst-til-tale-teknologi.
 
@@ -27,13 +28,13 @@ NB! Stemmen i videoen er generert med AI-basert tekst-til-tale-teknologi.
 
 ## Teknologi
 
-| Teknologi | Versjon |
-|---|---|
-| React | 18+ |
-| Vite | 5+ |
-| @stomp/stompjs | siste |
-| sockjs-client | siste |
-| react-router-dom | siste |
+| Teknologi        | Versjon |
+| ---------------- | ------- |
+| React            | 18+     |
+| Vite             | 5+      |
+| @stomp/stompjs   | siste   |
+| sockjs-client    | siste   |
+| react-router-dom | siste   |
 
 ## Kom i gang
 
@@ -50,16 +51,16 @@ npm run dev
 
 Konfigureres i `src/config.ts`:
 
-| Konstant | Standard | Beskrivelse |
-|---|---|---|
-| `API_BASE_URL` | `http://localhost:8080` | logsense-ai-backend |
-| `WS_RECONNECT_DELAY` | `5000` | WebSocket reconnect-intervall i ms |
-| `MAX_LOG_ENTRIES` | `50` | Maks antall rader i logtabellen |
-| `WINDOW_WIDTH` | `500` | Bredde på Google login-popup |
-| `WINDOW_HEIGHT` | `620` | Høyde på Google login-popup |
-| `REDIRECT_DELAY_MS` | `500` | Forsinkelse før redirect etter login |
-| `API_LOGS_SEARCH` | `/api/v1/logs/search` | Elasticsearch keyword-søk |
-| `API_LOGS_SEARCH_STATUS` | `/api/v1/logs/search/status` | Elasticsearch statusfilter |
+| Konstant                 | Standard                     | Beskrivelse                          |
+| ------------------------ | ---------------------------- | ------------------------------------ |
+| `API_BASE_URL`           | `http://localhost:8080`      | logsense-ai-backend                  |
+| `WS_RECONNECT_DELAY`     | `5000`                       | WebSocket reconnect-intervall i ms   |
+| `MAX_LOG_ENTRIES`        | `50`                         | Maks antall rader i logtabellen      |
+| `WINDOW_WIDTH`           | `500`                        | Bredde på Google login-popup         |
+| `WINDOW_HEIGHT`          | `620`                        | Høyde på Google login-popup          |
+| `REDIRECT_DELAY_MS`      | `500`                        | Forsinkelse før redirect etter login |
+| `API_LOGS_SEARCH`        | `/api/v1/logs/search`        | Elasticsearch keyword-søk            |
+| `API_LOGS_SEARCH_STATUS` | `/api/v1/logs/search/status` | Elasticsearch statusfilter           |
 
 ## Relasjon til backend
 
@@ -84,7 +85,7 @@ logsense-ai-backend (port 8080)
 src/
 ├── main.tsx                       # Inngangspunkt
 ├── App.tsx                        # Router-oppsett, auth-logikk, global state
-├── App.css                        # Styling  
+├── App.css                        # Styling
 ├── LoginSuccess.tsx               # Håndterer token fra OAuth2-redirect
 ├── config.ts                      # Alle konfigurasjonskonstanter
 ├── hooks/
@@ -101,7 +102,21 @@ src/
 ## Scripts
 
 ```bash
-npm run dev     # Start utviklingsserver
-npm run build   # Bygg for produksjon
-npm run preview # Forhåndsvis produksjonsbygg
+npm run dev          # Start utviklingsserver
+npm run build        # Bygg for produksjon
+npm run preview      # Forhåndsvis produksjonsbygg
+npm run typecheck    # TypeScript typesjekk
+npm run lint         # ESLint kodesjekk
+npm run format       # Prettier kodeformatering
+```
+
+## Testing
+
+```bash
+npx vitest run                  # Kjør alle tester
+npx vitest run --coverage       # Kjør tester med coverage-rapport
+npx playwright test             # Kjør E2E-tester
+npx playwright test --ui        # Kjør E2E-tester med UI
+npx playwright test --debug     # Debug E2E-tester
+npx playwright show-report      # Vis testrapport
 ```

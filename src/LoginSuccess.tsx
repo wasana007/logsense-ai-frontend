@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import { JWT_KEY } from "./config";
+import { useEffect, useRef } from 'react';
+import { JWT_KEY } from './config';
 
 export default function LoginSuccess() {
   const didRun = useRef(false);
@@ -8,23 +8,23 @@ export default function LoginSuccess() {
     if (didRun.current) return;
     didRun.current = true;
 
-    const token = new URLSearchParams(window.location.search).get("token");
+    const token = new URLSearchParams(window.location.search).get('token');
 
     if (!token) {
-      window.location.replace("/");
+      window.location.replace('/');
       return;
     }
 
     localStorage.setItem(JWT_KEY, token);
-    window.location.replace("/");
+    window.location.replace('/');
   }, []);
 
   return (
     <div
       style={{
-        textAlign: "center",
-        marginTop: "3rem",
-        fontFamily: "sans-serif",
+        textAlign: 'center',
+        marginTop: '3rem',
+        fontFamily: 'sans-serif',
       }}
     >
       <p>Logger inn...</p>

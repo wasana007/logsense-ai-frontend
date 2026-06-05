@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { API_BASE_URL, API_LOGS } from "../config";
+import { useState } from 'react';
+import { API_BASE_URL, API_LOGS } from '../config';
 
-type LogStatus = "PENDING" | "FAILED" | "COMPLETED";
+type LogStatus = 'PENDING' | 'FAILED' | 'COMPLETED';
 
 interface LogApiResponse {
   correlationId: string;
@@ -16,9 +16,9 @@ interface UseLogApiReturn {
 }
 
 export function useLogApi(getToken: () => string | null): UseLogApiReturn {
-  const [loading, setLoading]             = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
   const [correlationId, setCorrelationId] = useState<string | null>(null);
-  const [status, setStatus]               = useState<LogStatus | null>(null);
+  const [status, setStatus] = useState<LogStatus | null>(null);
 
   const sendLog = async (log: string): Promise<void> => {
     if (!log.trim()) return;
@@ -29,9 +29,9 @@ export function useLogApi(getToken: () => string | null): UseLogApiReturn {
 
     try {
       const res = await fetch(`${API_BASE_URL}${API_LOGS}`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${getToken()}`,
         },
         body: log,
@@ -41,10 +41,9 @@ export function useLogApi(getToken: () => string | null): UseLogApiReturn {
 
       const data: LogApiResponse = await res.json();
       setCorrelationId(data.correlationId);
-      setStatus("PENDING");
-
-    } catch (err) {
-      setStatus("FAILED");
+      setStatus('PENDING');
+    } catch {
+      setStatus('FAILED');
     } finally {
       setLoading(false);
     }
